@@ -8,6 +8,9 @@ gem 'chewy'
 bundle
 gem install chewy
 
+Chewy.strategy(:urgent)
+City.popular.map(&:do_some_update_action!)
+
 ```
 
 ```
