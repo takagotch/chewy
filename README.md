@@ -411,13 +411,25 @@ class ChewySubscriber < NewRelic::Agent::Instrumentation::EventedSubscriber
 end
 ActiveSupport::Notification.subscribe(/.chewy$/, ChewySubscriber.new)
 
+PlaceIndex.query(match: {name: 'London'})
+PlaceIndex::City.query(match: {name: 'London'})
 
+PlaceIndex
+  .filter(term: {name: 'Bankok'})
+  .query {match name: 'London'}
+  .query.not(range: {populaton: {gt: 1_000_000}})
 
+PlaceIndex.limit(10).offset(30).order(:name, {population: {order: :desc}})
 
+PlacesIndex.load(scope: -> { active }).to_a
+PlacesIndex.load(scope: -> { active }).objects
 
+scope = PlacesIndex.load(scope: -> { active })
+scope.each do |wrapper|
+  scope.object_hash[wrapper]
+end
 
-
-
+Chewy.use_after_commit_callbacks = !Rails.env.test?
 ```
 
 ```
