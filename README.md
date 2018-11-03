@@ -301,6 +301,85 @@ Chewy.strategy(:urgent) do
   City.popular.map(&:do_some_update_action!)
 end
 
+Chewy.strategy(:atomic) do
+  city1.do_update!
+  Chewy.strategy(:urgent) do
+    city2.do_update!
+    city3.do_update!
+  end
+  city4.do_update!
+end
+
+Chewy.strategy(:urgent)
+city1.do_update!
+Chewy.strategy(:bypass)
+city2.do_update!
+Chewy.strategy.pop
+city3.do_update!
+
+Rspec.configure do |config|
+  config.before(:suite) do
+    Chewy.strategy(:bypass)
+  end
+end
+
+require 'new_relic/agent/instrumentation/evented_subscriber'
+class ChewySubscriber < NewRelic::Agent::Instrumentation::EventedSubscriber
+  def start(name, id, payload)
+    event = ChewyEvent.new(name, Time.current, nil, id, payload)
+    push_event(event)
+  end
+  def fnishe(_name, id, _paylod)
+    pop_event(id).finish
+  end
+  class ChewyEvent < NewRelic::Agent::Instrumentation::Event
+    OPERATIONS = {
+      'import_objects.chewy' => 'import',
+      'search_query.chewy' => 'search',
+      'delete_query.chewy' => 'delete'
+    }.freeze
+    def initialize(*args)
+      super
+      @segment = start_segment
+    end
+    def start_segment
+      segment = NewRelic::Agent::Transaction::DatastoreSegment.new product, operation, collection, host, port
+      if (txn = state.current_transaction)
+        segment.transaction = txn
+      end
+      segment.notice_sql @payload[:request].to_s
+      segment.start
+      segment
+    end
+    def finish
+      if(txn = state.current_transaction)
+        txn.add_segment @segment
+      end
+      @segment.finish
+    end
+    private
+    def state
+      'Elasticsearch'
+    end
+    def operation
+      OPERATIONS[name]
+    end
+    def collection
+      payload.values_at(:type, :index)
+             .reject { |value| value.try(:empty?) }
+             .first
+             .to_s
+    end
+    def host
+      Chewy.client.transport.hosts.first[:host]
+    end
+    def port
+      Chewy.client.transport.hosts.first[:port]
+    end
+  end
+end
+ActiveSupport::Notification.subscribe(/.chewy$/, ChewySubscriber.new)
+
 
 
 
