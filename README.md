@@ -187,6 +187,35 @@ Product.includes().find_in_batches(1000) do |batch|
   Chewy.client.bulk_body
 end
 
+define_type Product do
+  witchcraft!
+  field :title
+  field :tags, value: -> { tags.map(&:name) }
+  field :categories do
+    field :name, value: -> (product, category){ category.name }
+    filed :type, value: -> (product, category,crutch){ crutch.types[category.name] }
+  end
+end
+
+->(object, crutches) do
+  {
+    title: object.title,
+    tags: object.tags.map(&:name),
+    categories: object.categories.map do |object2|
+      {
+        name: object2.name
+        type: crutches.types[object2.name]
+      }
+    end
+  }
+end
+
+[:first_name, :last_name].each do |name|
+  field name, value: -> (o) { o.send(name) }
+end
+
+
+
 
 
 
