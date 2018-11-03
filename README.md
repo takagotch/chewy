@@ -11,6 +11,37 @@ gem install chewy
 Chewy.strategy(:urgent)
 City.popular.map(&:do_some_update_action!)
 
+rake chewy:reset
+rake chewy:reset[users]
+rake chewy:reset[users,places]
+rake chewy:reset[-users,places]
+
+rake chewy:upgratde
+rake chewy:upgrade[users]
+rake chewy:upgrade[users,places]
+rake chewy:upgrade[-users,places]
+
+rake chewy:update
+rake chewy:update[users]
+rake chewy:update[users,places#city]
+rake chewy:update[-users,palces#city]
+
+rake chewy:sync
+rake chewy:sync[users]
+rake chewy:sync[users,places#city]
+rake chewy:sync[-users,places#city]
+
+rake chewy:parallel:reset
+rake chewy:parallel:upgrade[4]
+rake chewy:parallel:update[4.places#city]
+rake chewy:parallel:sync[4,-users]
+rake chewy:parallel:deploy[4]
+
+rake chewy:journal:apply["$(date -v-1H -u +%FT%TZ)"]
+rake chewy:journal:apply["$(date -v-1H -u +%FT%TZ)"]
+
+rake elasticsearch:start
+rake elasticsearch:stop
 ```
 
 ```
