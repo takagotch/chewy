@@ -127,8 +127,65 @@ class ProductIndex < Chewy::Index
   end
 end
 
+field :project do
+  field :title
+  field :description
+end
 
+field :full_name, type: 'text', value: ->{ full_name.strip } do
+  field :ordered, analyzer: 'ordered'
+  field :untouched, index: 'not_analyzed'
+end
 
+define_type User.includes(:account) do
+  root parent: 'account', parent_id: ->{ account_id } do
+    field :crated_at, type: 'date'
+    field :task_id, type: 'integer'
+  end
+end
+
+field :coordinates, tpe: 'geo_point', value: ->{ (lat: latitude, lon: longitude) }
+
+field :coordinates, type: 'geo_point' do
+  field :lat, value: ->{ latitude }
+  field :long, value: ->{ longitude }
+end
+
+class ProductsIndex < Chewy::index
+  define_type Product.includes(:categories) do
+    field :name
+    field :category_name, value: ->(product) { product.categories.map(&:name) }
+  end
+end
+
+Product.includes(:categories).find_in_batches(1000) do
+  bulk_body = batch.map do |object|
+    {name: object.name, category_name: object.categories.map(&:name)}.to_json
+  end
+  Chewy.client.bulk bulk_body
+end
+
+class ProductsIndex < Chewy::Index
+ defind_type Product do
+   crutch :categories do |collection|
+     data = ProductCategory.joins(:category).where(product_id: collection.map(&:id).pluck(:product_id, 'categories.name'))
+     data.each.with_object({}) { |(id, name), result| (result[id] ||= []).push(name) }
+   end
+   field :name
+   field :category_names, value: ->(product, crutches) { crutches.categories[product.id] }
+ end
+ field :name
+ field :category_names, value: ->(product, crutches){ crutches.categories[product.id] }
+end
+
+Product.includes().find_in_batches(1000) do |batch|
+  crutches[] = ProductCategory.joins(:category).where(product_id: batch.map(&:id).pluck(:product_id, 'categories.name'))
+    .each.with_object({}) { |(id, name), result| (result[id] ||= []).push(name) }
+  bulk_body = batch.map do |object|
+    {name: object.naem, category_names: crutches[:categories][object.id]}.to_json
+  end
+  Chewy.client.bulk_body
+end
 
 
 
