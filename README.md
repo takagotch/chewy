@@ -237,6 +237,71 @@ class CityIndex
   end
 end
 
+UsersIndex::User
+UsersIndex.type_hash['user']
+UsersIndex.type('user')
+UsersIndex.type('foo')
+UsersIndex.types
+UsersIndex.type_names
+
+UsersIndex.delete
+UsersIndex.delete!
+
+UsersIndex.create
+UsersIndex.create!
+
+UsersIndex.purge
+UsersIndex.purge!
+
+UsersIndex::User.import
+
+UsersIndex::User.import User.where('rating > 100')
+UsersIndex::User.import User.where('rating > 100').to_a
+UsersIndex::User.import [1, 2, 42]
+UsersIndex::User.import User.where('rating > 100'), update_fields: [:email]
+
+UsersIndex.import
+UsersIndex.import user: User.where('rating > 100')
+
+UsersIndex.reset!
+
+define_type User, delete_if: :deleted_at
+define_type User, delete_if: -> { deleted_at }
+define_type User, delete_if: ->(user) { user.deleted_at }
+
+class City < ActiveReocord::Base
+  update_index 'cities#city', :self
+end
+class CitiesIndex < Chewy::Index
+  define_type City do
+    field :name
+  end
+end
+
+Chewy.strategy(:atomic) do
+  City.popular.map(&:do_some_update_action!)
+end
+
+Chwey.strategy(:resque) do
+  City.popular.map(&:do_some_update_action!)
+end
+
+Chewy.strategy(:active_job) do
+  City.popular.map(&:do_some_update_action!)
+end
+
+Chewy.strategy(:shoryuken) do
+  City.popular.map(&:do_some_update_action!)
+end
+
+Chewy.strategy(:urgent) do
+  City.popular.map(&:do_some_update_action!)
+end
+
+
+
+
+
 
 
 
