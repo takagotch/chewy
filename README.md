@@ -214,7 +214,28 @@ end
   field name, value: -> (o) { o.send(name) }
 end
 
+class LightweightProduct
+  def initialize(attributes)
+    @attributes = attributes
+  end
+  def created_at
+    @attributes['created_at'].tr(' ', 'T') << 'Z'
+  end
+end
+define_type Product do
+  default_import_options raw_import: ->(hash){
+    LightweightProduct.new(hash)
+  }
+  field :created_at, 'datetime'
+end
 
+CityIndex.import journal: true
+
+class CityIndex
+  define_type City do
+    default_import_options journal: true
+  end
+end
 
 
 
@@ -229,6 +250,9 @@ test:
 development:
   host: 'localhost:9200'
   
+production:
+  journal: true
+  journal_name my_super_journal
   
 ```
 
